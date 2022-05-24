@@ -11,7 +11,7 @@ The available spam checker callbacks are:
 ### `check_event_for_spam`
 
 _First introduced in Synapse v1.37.0_
-_Signature extended to support Allow and Code in Synapse v1.60.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
 _Boolean and string return value types deprecated in Synapse v1.60.0_
 
 ```python
@@ -38,14 +38,22 @@ will not call any of the subsequent implementations of this callback.
 ### `user_may_join_room`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
-async def user_may_join_room(user: str, room: str, is_invited: bool) -> bool
+async def user_may_join_room(user: str, room: str, is_invited: bool) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when a user is trying to join a room. The module must return a `bool` to indicate
-whether the user can join the room. Return `False` to prevent the user from joining the
-room; otherwise return `True` to permit the joining.
+Called when a user is trying to join a room. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 The user is represented by their Matrix user ID (e.g.
 `@alice:example.com`) and the room is represented by its Matrix ID (e.g.
@@ -55,32 +63,32 @@ currently has a pending invite in the room.
 This callback isn't called if the join is performed by a server administrator, or in the
 context of a room creation.
 
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `True`, Synapse falls through to the next one. The value of the first
-callback that does not return `True` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
-
 ### `user_may_invite`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
-async def user_may_invite(inviter: str, invitee: str, room_id: str) -> bool
+async def user_may_invite(inviter: str, invitee: str, room_id: str) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when processing an invitation. The module must return a `bool` indicating whether
-the inviter can invite the invitee to the given room. Both inviter and invitee are
-represented by their Matrix user ID (e.g. `@alice:example.com`). Return `False` to prevent
-the invitation; otherwise return `True` to permit it.
+Called when processing an invitation. Called when a user is trying to join a room. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `True`, Synapse falls through to the next one. The value of the first
-callback that does not return `True` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
 
 ### `user_may_send_3pid_invite`
 
 _First introduced in Synapse v1.45.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
 async def user_may_send_3pid_invite(
@@ -88,13 +96,19 @@ async def user_may_send_3pid_invite(
     medium: str,
     address: str,
     room_id: str,
-) -> bool
+) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when processing an invitation using a third-party identifier (also called a 3PID,
-e.g. an email address or a phone number). The module must return a `bool` indicating
-whether the inviter can invite the invitee to the given room. Return `False` to prevent
-the invitation; otherwise return `True` to permit it.
+Called when processing an invitation using a third-party identifier (also called a 3PID, 
+e.g. an email address or a phone number). The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 The inviter is represented by their Matrix user ID (e.g. `@alice:example.com`), and the
 invitee is represented by its medium (e.g. "email") and its address
@@ -124,55 +138,62 @@ any of the subsequent implementations of this callback.
 ### `user_may_create_room`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
-async def user_may_create_room(user: str) -> bool
+async def user_may_create_room(user: str) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when processing a room creation request. The module must return a `bool` indicating
-whether the given user (represented by their Matrix user ID) is allowed to create a room.
-Return `False` to prevent room creation; otherwise return `True` to permit it.
-
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `True`, Synapse falls through to the next one. The value of the first
-callback that does not return `True` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
+Called when processing a room creation request. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 ### `user_may_create_room_alias`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
 async def user_may_create_room_alias(user: str, room_alias: "synapse.types.RoomAlias") -> bool
 ```
 
-Called when trying to associate an alias with an existing room. The module must return a
-`bool` indicating whether the given user (represented by their Matrix user ID) is allowed
-to set the given alias. Return `False` to prevent the alias creation; otherwise return 
-`True` to permit it.
-
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `True`, Synapse falls through to the next one. The value of the first
-callback that does not return `True` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
+Called when trying to associate an alias with an existing room. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 ### `user_may_publish_room`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
-async def user_may_publish_room(user: str, room_id: str) -> bool
+async def user_may_publish_room(user: str, room_id: str) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when trying to publish a room to the homeserver's public rooms directory. The
-module must return a `bool` indicating whether the given user (represented by their
-Matrix user ID) is allowed to publish the given room. Return `False` to prevent the
-room from being published; otherwise return `True` to permit its publication.
-
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `True`, Synapse falls through to the next one. The value of the first
-callback that does not return `True` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
+Called when trying to publish a room to the homeserver's public rooms directory. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 ### `check_username_for_spam`
 
@@ -239,22 +260,25 @@ this callback.
 ### `check_media_file_for_spam`
 
 _First introduced in Synapse v1.37.0_
+_Signature extended to support Allow and Codes in Synapse v1.60.0_
+_Boolean return value type deprecated in Synapse v1.60.0_
 
 ```python
 async def check_media_file_for_spam(
     file_wrapper: "synapse.rest.media.v1.media_storage.ReadableFileWrapper",
     file_info: "synapse.rest.media.v1._base.FileInfo",
-) -> bool
+) -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes", bool]
 ```
 
-Called when storing a local or remote file. The module must return a `bool` indicating
-whether the given file should be excluded from the homeserver's media store. Return
-`True` to prevent this file from being stored; otherwise return `False`.
-
-If multiple modules implement this callback, they will be considered in order. If a
-callback returns `False`, Synapse falls through to the next one. The value of the first
-callback that does not return `False` will be used. If this happens, Synapse will not call
-any of the subsequent implementations of this callback.
+Called when storing a local or remote file. The callback must return either:
+  - `synapse.module_api.ALLOW`, to allow the operation. Other callbacks
+    may still decide to reject it.
+  - `synapse.api.Codes` to reject the operation with an error code. In case
+    of doubt, `synapse.api.error.Codes.FORBIDDEN` is a good error code.
+  - (deprecated) on `True`, behave as `ALLOW`. Deprecated as confusing, as some
+    callbacks in expect `True` to allow and others `True` to reject.
+  - (deprecated) on `False`, behave as `synapse.api.error.Codes.FORBIDDEN`. Deprecated as confusing, as
+    some callbacks in expect `True` to allow and others `True` to reject.
 
 ### `should_drop_federated_event`
 
@@ -317,6 +341,8 @@ class ListSpamChecker:
             resource=IsUserEvilResource(config),
         )
 
-    async def check_event_for_spam(self, event: "synapse.events.EventBase") -> Union[bool, str]:
-        return event.sender not in self.evil_users
+    async def check_event_for_spam(self, event: "synapse.events.EventBase") -> Union["synapse.module_api.ALLOW", "synapse.module_api.error.Codes"]:
+        if event.sender not in self.evil_users:
+          return synapse.module_api.ALLOW
+        return synapse.module_api.error.Codes.FORBIDDEN
 ```
