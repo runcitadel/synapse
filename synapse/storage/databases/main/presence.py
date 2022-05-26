@@ -103,6 +103,11 @@ class PresenceStore(PresenceBackgroundUpdateStore):
             prefilled_cache=presence_cache_prefill,
         )
 
+        self._send_full_presence_stream_cache = StreamChangeCache(
+            "SendFulPresenceStreamChangeCache",
+            self._presence_id_gen.get_current_token(),
+        )
+
     async def update_presence(
         self, presence_states: List[UserPresenceState]
     ) -> Tuple[int, int]:
@@ -281,6 +286,15 @@ class PresenceStore(PresenceBackgroundUpdateStore):
             True if the user should have full presence sent to them, False otherwise.
         """
 
+        # We take one away from the `from_token` as the stream change caches
+        # operates on the assumption that the token given *excludes* the change
+        # at the given token, whereas here we want to *include* and change at
+        # the token.
+        if not self._send_full_presence_stream_cache.has_entity_changed(
+            user_id, from_token - 1
+        ):
+            return False
+
         def _should_user_receive_full_presence_with_token_txn(
             txn: LoggingTransaction,
         ) -> bool:
@@ -320,6 +334,10 @@ class PresenceStore(PresenceBackgroundUpdateStore):
             value_values=[(presence_stream_id,) for _ in user_ids],
             desc="add_users_to_send_full_presence_to",
         )
+        for user_id in user_ids:
+            self._send_full_presence_stream_cache.entity_has_changed(
+                user_id, presence_stream_id
+            )
 
     async def get_presence_for_all_users(
         self,
