@@ -1820,22 +1820,11 @@ Registration can be rate-limited using the parameters in the [Ratelimiting](#rat
 Config option: `enable_registration`
 
 Enable registration for new users. Defaults to false. It is highly recommended that if you enable registration,
-you use either captcha, email, or token-based verification to verify that new users are not bots. In order to enable registration 
-without any verification, you must also set `enable_registration_without_verification` to true.
+you use either captcha, email, or token-based verification to verify that new users are not bots.
 
 Example configuration:
 ```yaml
 enable_registration: true
-```
----
-Config option: `enable_registration_without_verification`
-Enable registration without email or captcha verification. Note: this option is *not* recommended,
-as registration without verification is a known vector for spam and abuse. Defaults to false. Has no effect
-unless `enable_registration` is also enabled.
-
-Example configuration:
-```yaml
-enable_registration_without_verification: true
 ```
 ---
 Config option: `session_lifetime`
